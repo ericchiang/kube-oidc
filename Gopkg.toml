@@ -1,0 +1,76 @@
+# Gopkg.toml example
+#
+# Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
+# for detailed Gopkg.toml documentation.
+#
+# required = ["github.com/user/thing/cmd/thing"]
+# ignored = ["github.com/user/project/pkgX", "bitbucket.org/user/project/pkgA/pkgY"]
+#
+# [[constraint]]
+#   name = "github.com/user/project"
+#   version = "1.0.0"
+#
+# [[constraint]]
+#   name = "github.com/user/project2"
+#   branch = "dev"
+#   source = "github.com/myfork/project2"
+#
+# [[override]]
+#   name = "github.com/x/y"
+#   version = "2.4.0"
+#
+# [prune]
+#   non-go = false
+#   go-tests = true
+#   unused-packages = true
+
+# Imported under a build tag for golang.org/x/oauth2
+ignored = ["google.golang.org/appengine/urlfetch"]
+
+[prune]
+  non-go = true
+  go-tests = true
+  unused-packages = true
+
+# Websocket proxy support
+[[constraint]]
+  name = "github.com/gorilla/websocket"
+  version = "v1.2.0"
+
+# Error conveniences
+[[constraint]]
+  name = "github.com/pkg/errors"
+  version = "v0.8.0"
+
+# OpenID Connect authenticator uses HTTP/2 support
+[[constraint]]
+  name = "golang.org/x/net"
+  revision = "2491c5de3490fced2f6cff376127c667efeed857"
+[[override]]
+  name = "golang.org/x/text"
+  version = "v0.3.0"
+
+# OpenID Connect client libraries and JWT validation utilties
+[[constraint]]
+  name = "github.com/coreos/go-oidc"
+  revision = "1180514eaf4d9f38d0d19eef639a1d695e066e72"
+[[constraint]]
+  name = "gopkg.in/square/go-jose.v2"
+  version = "v2.1.6"
+[[override]]
+  name = "github.com/pquerna/cachecontrol"
+  revision = "1555304b9b35fdd2b425bccf1a5613677705e7d0"
+[[override]]
+  name = "golang.org/x/crypto"
+  revision = "1a580b3eff7814fc9b40602fd35256c63b50f491"
+[[override]]
+  name = "golang.org/x/oauth2"
+  revision = "cdc340f7c179dbbfa4afd43b7614e8fcadde4269"
+
+# YAML parsing for kubeconfig files
+[[constraint]]
+  name = "github.com/ghodss/yaml"
+  version = "v1.0.0"
+[[override]]
+  name = "gopkg.in/yaml.v2"
+  version = "v2.2.1"
