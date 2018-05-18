@@ -37,7 +37,7 @@ type Config struct {
 // New constructs an Kubernetes auth proxy which authenticates client requests
 // and uses impersonation headers to impersonate that user to the backend
 // service.
-func New(c Config) (http.Handler, error) {
+func New(c *Config) (http.Handler, error) {
 	backend, err := url.Parse(c.Backend)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing backend URL")
@@ -124,7 +124,7 @@ func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	r.Header.Set("Impersonate-User", username)
 	for _, group := range groups {
-		r.Header.Set("Impersonate-Group", group)
+		r.Header.Add("Impersonate-Group", group)
 	}
 
 	p.backendAuth(r)
