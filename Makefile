@@ -1,3 +1,12 @@
+VERSION ?= $(shell ./scripts/git-version.sh)
+LD_FLAGS="-X github.com/ericchiang/kube-oidc/internal/app.gitCommit=$(VERSION)"
+
+
+bin/kube-oidc-proxy: FORCE
+	go build -ldflags $(LD_FLAGS) -o bin/kube-oidc-proxy ./cmd/kube-oidc-proxy
+
+FORCE:
+
 .PHONY: test
 test: bin/golint
 	go test ./...
