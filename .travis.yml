@@ -4,6 +4,7 @@ go:
   - '1.10'
 
 script:
+  - make
   - make test
 
 notifications:
