@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ericchiang/kube-oidc/internal/app"
+	"github.com/ericchiang/kube-oidc/cmd/kube-oidc-proxy/app"
 )
 
 func main() {
-	if err := app.NewKubeOIDCProxy().Execute(); err != nil {
+	if err := app.New().Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

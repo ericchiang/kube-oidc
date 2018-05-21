@@ -1,5 +1,5 @@
 // +build cgo
 
-package app
+package version
 
 const cgoEnabled = true
