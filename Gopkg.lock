@@ -25,6 +25,12 @@
   version = "v1.0"
 
 [[projects]]
+  name = "github.com/oklog/run"
+  packages = ["."]
+  revision = "4dadeb3030eda0273a12382bb2348ffc7c9d1a39"
+  version = "v1.0.0"
+
+[[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
@@ -118,6 +124,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "733781748adb7b40ec17e0e883833751015296562917e969eccbc25b93915695"
+  inputs-digest = "b19bab5e9897a3e7d4532be8b096d7610a60d5a91d77dbbb152e6474f12bf682"
   solver-name = "gps-cdcl"
   solver-version = 1
