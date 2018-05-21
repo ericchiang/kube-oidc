@@ -17,11 +17,12 @@ import (
 	"github.com/ericchiang/kube-oidc/internal/authproxy"
 	"github.com/ericchiang/kube-oidc/internal/forked/oidc"
 	"github.com/ericchiang/kube-oidc/internal/kubeconfig"
+	"github.com/ericchiang/kube-oidc/internal/version"
 )
 
-// NewKubeOIDCProxy returns a command line tool for an authenticating
-// proxy against the Kubernetes API server.
-func NewKubeOIDCProxy() *cobra.Command {
+// New returns a command line tool for an authenticating proxy against the
+// Kubernetes API server.
+func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "kube-oidc-proxy",
 		Short: "An OpenID Connect authenticating proxy for Kubernetes",
@@ -61,7 +62,7 @@ Kubernetes cluster, without API server reconfiguration.
 			if len(args) > 0 {
 				return errors.New("surplus arguments provided")
 			}
-			fmt.Println(versionString())
+			fmt.Println(version.String())
 			return nil
 		},
 	}

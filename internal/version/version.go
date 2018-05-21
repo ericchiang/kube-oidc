@@ -1,4 +1,4 @@
-package app
+package version
 
 import (
 	"fmt"
@@ -7,9 +7,9 @@ import (
 
 var gitCommit = "built incorrectly"
 
-// versionString returns a formatted strings representing the program's build
+// String returns a formatted strings representing the program's build
 // version. It's intended to be used with "--verison" flags.
-func versionString() string {
+func String() string {
 	return fmt.Sprintf(
 		`Version: %s
 Go version: %s

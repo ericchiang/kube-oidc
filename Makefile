@@ -1,5 +1,5 @@
 VERSION ?= $(shell ./scripts/git-version.sh)
-LD_FLAGS="-X github.com/ericchiang/kube-oidc/internal/app.gitCommit=$(VERSION)"
+LD_FLAGS="-X github.com/ericchiang/kube-oidc/internal/version.gitCommit=$(VERSION)"
 
 
 bin/kube-oidc-proxy: FORCE
