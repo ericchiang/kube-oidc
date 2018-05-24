@@ -17,22 +17,29 @@ func TestParseConfig(t *testing.T) {
 			data: `
 version: "v1"
 
-httpAddress: "0.0.0.0:80"
+web:
+  http: "0.0.0.0:80"
+  https: "0.0.0.0:443"
+  httpsCert: "certs/serving.crt"
+  httpsKey: "certs/serving.key"
 
-httpsAddress: "0.0.0.0:443"
-httpsCertificate: "certs/serving.crt"
-httpsKey: "certs/serving.key"
+oidc:
+  issuer: "https://accounts.google.com"
+  issuerCA: "/etc/certs/certs.pem"
 
-oidcIssuer: "https://accounts.google.com"
-oidcIssuerCA: "/etc/certs/certs.pem"
+  clientID: "my-client-id"
+  clientSecretFile: "/etc/client-secret"
 
-oidcClientID: "my-client-id"
-oidcClientSecretFile: "/etc/client-secret"
+  scopes:
+  - "openid"
+  - "email"
+  - "profile"
 
-oidcRedirectURI: "http://localhost:8080/callback"
+  redirectURI: "http://localhost:8080/callback"
 
-kubernetesEndpoint: "https://k8s.example.com"
-kubernetesCA: "/etc/certs/cert.pem"
+kubernetes:
+  apiServer: "https://k8s.example.com"
+  apiServerCA: "/etc/certs/cert.pem"
 `,
 			want: &config{
 				httpAddress:          "0.0.0.0:80",
@@ -44,6 +51,7 @@ kubernetesCA: "/etc/certs/cert.pem"
 				oidcClientID:         "my-client-id",
 				oidcClientSecretFile: "/etc/client-secret",
 				oidcRedirectURI:      "http://localhost:8080/callback",
+				oidcScopes:           []string{"openid", "email", "profile"},
 				kubernetesEndpoint:   "https://k8s.example.com",
 				kubernetesCA:         "/etc/certs/cert.pem",
 			},
@@ -53,24 +61,29 @@ kubernetesCA: "/etc/certs/cert.pem"
 			data: `
 version: "v1"
 
-httpAddress: "0.0.0.0:80"
+web:
+  http: "0.0.0.0:80"
+  https: "0.0.0.0:443"
+  httpsCert: "certs/serving.crt"
+  httpsKey: "certs/serving.key"
 
-httpsAddress: "0.0.0.0:443"
-httpsCertificate: "certs/serving.crt"
-httpsKey: "certs/serving.key"
+oidc:
+  issuer: "https://accounts.google.com"
+  issuerCA: "/etc/certs/certs.pem"
 
-oidcIssuer: "https://accounts.google.com"
-oidcIssuerCA: "/etc/certs/certs.pem"
+  clientID: "my-client-id"
+  clientSecretFile: "/etc/client-secret"
+  redirectURI: "http://localhost:8080/callback"
 
-oidcClientID: "my-client-id"
-oidcClientSecretFile: "/etc/client-secret"
+# Woops, this was unindented!
+scopes:
+- "openid"
+- "email"
+- "profile"
 
-oidcRedirectURI: "http://localhost:8080/callback"
-
-kubernetesEndpoint: "https://k8s.example.com"
-kubernetesCA: "/etc/certs/cert.pem"
-
-unknown: "hi"
+kubernetes:
+  apiServer: "https://k8s.example.com"
+  apiServerCA: "/etc/certs/cert.pem"
 `,
 			wantErr: true,
 		},

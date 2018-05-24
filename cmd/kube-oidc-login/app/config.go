@@ -59,18 +59,18 @@ func parseConfig(b []byte) (*config, error) {
 			return nil, errors.Wrap(err, "invalid v1 config")
 		}
 		return &config{
-			httpAddress:          v1.HTTPAddress,
-			httpsAddress:         v1.HTTPSAddress,
-			httpsCertificate:     v1.HTTPSCertificate,
-			httpsKey:             v1.HTTPSKey,
-			oidcIssuer:           v1.OIDCIssuer,
-			oidcIssuerCA:         v1.OIDCIssuerCA,
-			oidcClientID:         v1.OIDCClientID,
-			oidcClientSecretFile: v1.OIDCClientSecretFile,
-			oidcRedirectURI:      v1.OIDCRedirectURI,
-			oidcScopes:           v1.OIDCScopes,
-			kubernetesEndpoint:   v1.KubernetesEndpoint,
-			kubernetesCA:         v1.KubernetesCA,
+			httpAddress:          v1.Web.HTTP,
+			httpsAddress:         v1.Web.HTTPS,
+			httpsCertificate:     v1.Web.HTTPSCert,
+			httpsKey:             v1.Web.HTTPSKey,
+			oidcIssuer:           v1.OIDC.Issuer,
+			oidcIssuerCA:         v1.OIDC.IssuerCA,
+			oidcClientID:         v1.OIDC.ClientID,
+			oidcClientSecretFile: v1.OIDC.ClientSecretFile,
+			oidcRedirectURI:      v1.OIDC.RedirectURI,
+			oidcScopes:           v1.OIDC.Scopes,
+			kubernetesEndpoint:   v1.Kubernetes.APIServer,
+			kubernetesCA:         v1.Kubernetes.APIServerCA,
 		}, nil
 	}
 }
@@ -78,34 +78,40 @@ func parseConfig(b []byte) (*config, error) {
 type configV1 struct {
 	Version string `json:"version"`
 
-	HTTPAddress string `json:"httpAddress"`
+	Web struct {
+		HTTP      string `json:"http"`
+		HTTPS     string `json:"https"`
+		HTTPSCert string `json:"httpsCert"`
+		HTTPSKey  string `json:"httpsKey"`
+	} `json:"web"`
 
-	HTTPSAddress     string `json:"httpsAddress"`
-	HTTPSCertificate string `json:"httpsCertificate"`
-	HTTPSKey         string `json:"httpsKey"`
+	OIDC struct {
+		Issuer   string `json:"issuer"`
+		IssuerCA string `json:"issuerCA"`
 
-	OIDCIssuer   string `json:"oidcIssuer"`
-	OIDCIssuerCA string `json:"oidcIssuerCA"`
+		ClientID         string `json:"clientID"`
+		ClientSecretFile string `json:"clientSecretFile"`
 
-	OIDCClientID         string `json:"oidcClientID"`
-	OIDCClientSecretFile string `json:"oidcClientSecretFile"`
+		RedirectURI string `json:"redirectURI"`
 
-	OIDCRedirectURI string `json:"oidcRedirectURI"`
+		Scopes []string `json:"scopes"`
+	} `json:"oidc"`
 
-	OIDCScopes []string `json:"oidcScopes"`
-
-	KubernetesEndpoint string `json:"kubernetesEndpoint"`
-	KubernetesCA       string `json:"kubernetesCA"`
+	Kubernetes struct {
+		APIServer   string `json:"apiServer"`
+		APIServerCA string `json:"apiServerCA"`
+	} `json:"kubernetes"`
 }
 
 func (c *configV1) verify() error {
 	required := []struct {
 		val, name string
 	}{
-		{c.OIDCIssuer, "oidcIssuer"},
-		{c.OIDCClientID, "oidcClientID"},
-		{c.OIDCClientSecretFile, "oidcClientSecretFile"},
-		{c.OIDCRedirectURI, "oidcRedirectURI"},
+		{c.OIDC.Issuer, "oidc.issuer"},
+		{c.OIDC.ClientID, "oidc.clientID"},
+		{c.OIDC.ClientSecretFile, "oidc.clientSecretFile"},
+		{c.OIDC.RedirectURI, "oidc.redirectURI"},
+		{c.Kubernetes.APIServer, "kubernetes.apiServer"},
 	}
 
 	for _, req := range required {
@@ -114,14 +120,14 @@ func (c *configV1) verify() error {
 		}
 	}
 
-	if c.HTTPAddress == "" && c.HTTPSAddress == "" {
-		return errors.New("must specify either httpAddress or httpsAddress")
+	if c.Web.HTTP == "" && c.Web.HTTPS == "" {
+		return errors.New("must specify either web.http or web.https")
 	}
-	if c.HTTPSAddress != "" && (c.HTTPSCertificate == "" || c.HTTPSKey == "") {
-		return errors.New("httpsAddress required both httpsCertificate and httpsKey")
+	if c.Web.HTTP != "" && (c.Web.HTTPSCert == "" || c.Web.HTTPSKey == "") {
+		return errors.New("web.http required both web.httpsCert and web.httpsKey")
 	}
-	if c.HTTPSAddress == "" && (c.HTTPSCertificate != "" || c.HTTPSKey != "") {
-		return errors.New("cannot specify httpsCertificate or httpsKey without httpsAddress")
+	if c.Web.HTTP == "" && (c.Web.HTTPSCert != "" || c.Web.HTTPSKey != "") {
+		return errors.New("cannot specify web.httpsCert or web.httpsKey without web.http")
 	}
 	return nil
 }

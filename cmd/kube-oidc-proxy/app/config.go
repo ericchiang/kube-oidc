@@ -56,16 +56,16 @@ func parseConfig(b []byte) (*config, error) {
 			return nil, errors.Wrap(err, "invalid v1 config")
 		}
 		return &config{
-			httpAddress:         v1.HTTPAddress,
-			httpsAddress:        v1.HTTPSAddress,
-			httpsCertificate:    v1.HTTPSCertificate,
-			httpsKey:            v1.HTTPSKey,
-			oidcIssuer:          v1.OIDCIssuer,
-			oidcCA:              v1.OIDCCA,
-			oidcUsernameClaim:   v1.OIDCUsernameClaim,
-			oidcGroupsClaim:     v1.OIDCGroupsClaim,
-			oidcAllowedClientID: v1.OIDCAllowedClientID,
-			kubeconfig:          v1.Kubeconfig,
+			httpAddress:         v1.Web.HTTP,
+			httpsAddress:        v1.Web.HTTPS,
+			httpsCertificate:    v1.Web.HTTPSCert,
+			httpsKey:            v1.Web.HTTPSKey,
+			oidcIssuer:          v1.OIDC.Issuer,
+			oidcCA:              v1.OIDC.IssuerCA,
+			oidcUsernameClaim:   v1.OIDC.UsernameClaim,
+			oidcGroupsClaim:     v1.OIDC.GroupsClaim,
+			oidcAllowedClientID: v1.OIDC.AllowedClientID,
+			kubeconfig:          v1.Kubernetes.Kubeconfig,
 		}, nil
 	}
 }
@@ -74,31 +74,36 @@ type configV1 struct {
 	// version defined here to ensure
 	Version string `json:"version"`
 
-	HTTPAddress string `json:"httpAddress"`
+	Web struct {
+		HTTP      string `json:"http"`
+		HTTPS     string `json:"https"`
+		HTTPSCert string `json:"httpsCert"`
+		HTTPSKey  string `json:"httpsKey"`
+	} `json:"web"`
 
-	HTTPSAddress     string `json:"httpsAddress"`
-	HTTPSCertificate string `json:"httpsCertificate"`
-	HTTPSKey         string `json:"httpsKey"`
+	OIDC struct {
+		Issuer   string `json:"issuer"`
+		IssuerCA string `json:"issuerCA"`
 
-	OIDCIssuer string `json:"oidcIssuer"`
-	OIDCCA     string `json:"oidcCA"`
+		UsernameClaim string `json:"usernameClaim"`
+		GroupsClaim   string `json:"groupsClaim"`
 
-	OIDCUsernameClaim string `json:"oidcUsernameClaim"`
-	OIDCGroupsClaim   string `json:"oidcGroupsClaim"`
+		AllowedClientID string `json:"allowedClientID"`
+	} `json:"oidc"`
 
-	OIDCAllowedClientID string `json:"oidcAllowedClientID"`
-
-	Kubeconfig string `json:"kubeconfig"`
+	Kubernetes struct {
+		Kubeconfig string `json:"kubeconfig"`
+	} `json:"kubernetes"`
 }
 
 func (c *configV1) verify() error {
 	required := []struct {
 		val, name string
 	}{
-		{c.OIDCIssuer, "oidcIssuer"},
-		{c.OIDCUsernameClaim, "oidcUsernameClaim"},
-		{c.OIDCAllowedClientID, "oidcAllowedClientID"},
-		{c.Kubeconfig, "kubeconfig"},
+		{c.OIDC.Issuer, "oidc.issuer"},
+		{c.OIDC.UsernameClaim, "oidc.usernameClaim"},
+		{c.OIDC.AllowedClientID, "oidc.allowedClientID"},
+		{c.Kubernetes.Kubeconfig, "kubernetes.kubeconfig"},
 	}
 
 	for _, req := range required {
@@ -107,14 +112,14 @@ func (c *configV1) verify() error {
 		}
 	}
 
-	if c.HTTPAddress == "" && c.HTTPSAddress == "" {
-		return errors.New("must specify either httpAddress or httpsAddress")
+	if c.Web.HTTP == "" && c.Web.HTTPS == "" {
+		return errors.New("must specify either web.http or web.https")
 	}
-	if c.HTTPSAddress != "" && (c.HTTPSCertificate == "" || c.HTTPSKey == "") {
-		return errors.New("httpsAddress required both httpsCertificate and httpsKey")
+	if c.Web.HTTPS != "" && (c.Web.HTTPSCert == "" || c.Web.HTTPSKey == "") {
+		return errors.New("web.https required both web.httpsCert and web.httpsKey")
 	}
-	if c.HTTPSAddress == "" && (c.HTTPSCertificate != "" || c.HTTPSKey != "") {
-		return errors.New("cannot specify httpsCertificate or httpsKey without httpsAddress")
+	if c.Web.HTTPS == "" && (c.Web.HTTPSCert != "" || c.Web.HTTPSKey != "") {
+		return errors.New("cannot specify web.httpsCert or web.httpsKey without web.https")
 	}
 	return nil
 }
