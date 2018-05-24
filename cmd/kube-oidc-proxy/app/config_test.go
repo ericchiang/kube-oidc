@@ -17,21 +17,23 @@ func TestParseConfig(t *testing.T) {
 			data: `
 version: "v1"
 
-httpAddress: "0.0.0.0:80"
+web:
+  http: "0.0.0.0:80"
+  https: "0.0.0.0:443"
+  httpsCert: "certs/serving.crt"
+  httpsKey: "certs/serving.key"
 
-httpsAddress: "0.0.0.0:443"
-httpsCertificate: "certs/serving.crt"
-httpsKey: "certs/serving.key"
+oidc:
+  issuer: "https://accounts.google.com"
+  issuerCA: "/etc/certs/certs.pem"
 
-oidcIssuer: "https://accounts.google.com"
-oidcCA: "/etc/certs/certs.pem"
+  usernameClaim: "email"
+  groupsClaim: "groups"
 
-oidcUsernameClaim: "email"
-oidcGroupsClaim: "groups"
+  allowedClientID: "my-client-id"
 
-oidcAllowedClientID: "my-client-id"
-
-kubeconfig: "/etc/kubeconfig"
+kubernetes:
+  kubeconfig: "/etc/kubeconfig"
 `,
 			want: &config{
 				httpAddress:         "0.0.0.0:80",
@@ -49,43 +51,48 @@ kubeconfig: "/etc/kubeconfig"
 		{
 			name: "no_version",
 			data: `
-httpAddress: "0.0.0.0:80"
+web:
+  http: "0.0.0.0:80"
+  https: "0.0.0.0:443"
+  httpsCert: "certs/serving.crt"
+  httpsKey: "certs/serving.key"
 
-httpsAddress: "0.0.0.0:443"
-httpsCertificate: "certs/serving.crt"
-httpsKey: "certs/serving.key"
+oidc:
+  issuer: "https://accounts.google.com"
+  issuerCA: "/etc/certs/certs.pem"
 
-oidcIssuer: "https://accounts.google.com"
-oidcCA: "/etc/certs/certs.pem"
+  usernameClaim: "email"
+  groupsClaim: "groups"
 
-oidcUsernameClaim: "email"
-oidcGroupsClaim: "groups"
+  allowedClientID: "my-client-id"
 
-oidcAllowedClientID: "my-client-id"
-
-kubeconfig: "/etc/kubeconfig"
+kubernetes:
+  kubeconfig: "/etc/kubeconfig"
 `,
 			wantErr: true,
 		},
 		{
 			name: "unrecognized_version",
 			data: `
-veresion: "v10"
-httpAddress: "0.0.0.0:80"
+version: "v10"
 
-httpsAddress: "0.0.0.0:443"
-httpsCertificate: "certs/serving.crt"
-httpsKey: "certs/serving.key"
+web:
+  http: "0.0.0.0:80"
+  https: "0.0.0.0:443"
+  httpsCert: "certs/serving.crt"
+  httpsKey: "certs/serving.key"
 
-oidcIssuer: "https://accounts.google.com"
-oidcCA: "/etc/certs/certs.pem"
+oidc:
+  issuer: "https://accounts.google.com"
+  issuerCA: "/etc/certs/certs.pem"
 
-oidcUsernameClaim: "email"
-oidcGroupsClaim: "groups"
+  usernameClaim: "email"
+  groupsClaim: "groups"
 
-oidcAllowedClientID: "my-client-id"
+  allowedClientID: "my-client-id"
 
-kubeconfig: "/etc/kubeconfig"
+kubernetes:
+  kubeconfig: "/etc/kubeconfig"
 `,
 			wantErr: true,
 		},
@@ -96,21 +103,23 @@ version: "v1"
 
 unknown: "hi"
 
-httpAddress: "0.0.0.0:80"
+web:
+  http: "0.0.0.0:80"
+  https: "0.0.0.0:443"
+  httpsCert: "certs/serving.crt"
+  httpsKey: "certs/serving.key"
 
-httpsAddress: "0.0.0.0:443"
-httpsCertificate: "certs/serving.crt"
-httpsKey: "certs/serving.key"
+oidc:
+  issuer: "https://accounts.google.com"
+  issuerCA: "/etc/certs/certs.pem"
 
-oidcIssuer: "https://accounts.google.com"
-oidcCA: "/etc/certs/certs.pem"
+  usernameClaim: "email"
+  groupsClaim: "groups"
 
-oidcUsernameClaim: "email"
-oidcGroupsClaim: "groups"
+  allowedClientID: "my-client-id"
 
-oidcAllowedClientID: "my-client-id"
-
-kubeconfig: "/etc/kubeconfig"
+kubernetes:
+  kubeconfig: "/etc/kubeconfig"
 `,
 			wantErr: true,
 		},
