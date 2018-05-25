@@ -93,11 +93,15 @@ func serve(configPath string) error {
 		issuerTLSConfig = &tls.Config{RootCAs: rootCAs}
 	}
 
-	kubernetesCA, err := ioutil.ReadFile(c.kubernetesCA)
-	if err != nil {
-		return errors.Wrap(err, "reading kubernetes CA file")
+	var kubernetesCA []byte
+	if c.kubernetesCA != "" {
+		kubernetesCA, err = ioutil.ReadFile(c.kubernetesCA)
+		if err != nil {
+			return errors.Wrap(err, "reading kubernetes CA file")
+		}
 	}
 
+	logger := log.New(os.Stderr, "", log.LstdFlags)
 	h, err := newServer(&serverConfig{
 		clientID:           c.oidcClientID,
 		clientSecret:       clientSecret,
@@ -107,7 +111,7 @@ func serve(configPath string) error {
 		redirectURI:        c.oidcRedirectURI,
 		kubernetesEndpoint: c.kubernetesEndpoint,
 		kubernetesCA:       kubernetesCA,
-		logger:             log.New(os.Stderr, "", log.LstdFlags),
+		logger:             logger,
 	})
 	if err != nil {
 		return errors.New("initializing server")
@@ -124,6 +128,7 @@ func serve(configPath string) error {
 		}
 
 		g.Add(func() error {
+			logger.Printf("serving HTTP at: http://%s", c.httpAddress)
 			return s.ListenAndServe()
 		}, func(err error) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
@@ -153,6 +158,7 @@ func serve(configPath string) error {
 		}
 
 		g.Add(func() error {
+			logger.Printf("serving HTTPS at: https://%s", c.httpsAddress)
 			return s.ListenAndServeTLS("", "")
 		}, func(err error) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
