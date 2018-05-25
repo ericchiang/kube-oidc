@@ -123,11 +123,11 @@ func (c *configV1) verify() error {
 	if c.Web.HTTP == "" && c.Web.HTTPS == "" {
 		return errors.New("must specify either web.http or web.https")
 	}
-	if c.Web.HTTP != "" && (c.Web.HTTPSCert == "" || c.Web.HTTPSKey == "") {
-		return errors.New("web.http required both web.httpsCert and web.httpsKey")
+	if c.Web.HTTPS != "" && (c.Web.HTTPSCert == "" || c.Web.HTTPSKey == "") {
+		return errors.New("web.https requires both web.httpsCert and web.httpsKey")
 	}
-	if c.Web.HTTP == "" && (c.Web.HTTPSCert != "" || c.Web.HTTPSKey != "") {
-		return errors.New("cannot specify web.httpsCert or web.httpsKey without web.http")
+	if c.Web.HTTPS == "" && (c.Web.HTTPSCert != "" || c.Web.HTTPSKey != "") {
+		return errors.New("cannot specify web.httpsCert or web.httpsKey without web.https")
 	}
 	return nil
 }

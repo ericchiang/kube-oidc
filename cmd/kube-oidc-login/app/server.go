@@ -152,6 +152,10 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleCallback(w, r)
 		return
 	}
+	if r.URL.Path == "/login/dl" {
+		s.handleDownload(w, r)
+		return
+	}
 	s.handleIndex(w, r)
 }
 
@@ -174,6 +178,58 @@ func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, s.config.AuthCodeURL(state), http.StatusSeeOther)
 }
+
+func (s *server) handleDownload(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("idtoken")
+	if err != nil {
+		s.logf("failed to get id token cookie: %v", err)
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+	if cookie.Value == "" {
+		s.logf("no id token set")
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+
+	out := &bytes.Buffer{}
+	err = kubeconfigTmpl.Execute(out, struct {
+		Server  string
+		CAData  string
+		IDToken string
+	}{
+		s.kubernetesEndpoint,
+		base64.StdEncoding.EncodeToString(s.kubernetesCA),
+		cookie.Value,
+	})
+	if err != nil {
+		s.logf("failed to render kubeconfig: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Disposition", "attachment; filename=kubeconfig")
+	w.Write(out.Bytes())
+}
+
+var kubeconfigTmpl = template.Must(template.New("").Parse(`apiVersion: v1
+kind: Config
+clusters:
+- name: cluster
+  cluster:
+    server: {{ .Server }}{{ if .CAData }}
+    certificate-authority-data: {{ .CAData }}{{ end }}
+users:
+- name: user
+  user:
+    token: {{ .IDToken }}
+contexts:
+- name: context
+  context:
+    cluster: cluster
+    name: user
+current-context: context
+`))
 
 func (s *server) handleCallback(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
@@ -222,15 +278,26 @@ func (s *server) handleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	claims, ok := insecureParseClaims(idToken)
+	if !ok {
+		s.logf("invalid id_token")
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "idtoken",
+		Value:    idToken,
+		HttpOnly: true,
+		Secure:   s.redirectURI.Scheme == "https",
+		Path:     "/login/dl",
+	})
+
 	out := &bytes.Buffer{}
-	err = kubeconfigTmpl.Execute(out, struct {
-		Server  string
-		CAData  string
-		IDToken string
+	err = kubeconfigHTMLTmpl.Execute(out, struct {
+		Claims string
 	}{
-		s.kubernetesEndpoint,
-		base64.StdEncoding.EncodeToString(s.kubernetesCA),
-		idToken,
+		Claims: claims,
 	})
 	if err != nil {
 		s.logf("failed to render kubeconfig: %v", err)
@@ -238,24 +305,55 @@ func (s *server) handleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/yaml")
 	w.Write(out.Bytes())
 }
 
-var kubeconfigTmpl = template.Must(template.New("").Parse(`apiVersion: v1
-kind: Config
-clusters:
-- name: cluster
-  cluster:
-    server: {{ .Server }}
-    certificate-authority-data: {{ .CAData }}
-users:
-- name: user
-  user:
-    token: {{ .IDToken }}
-contexts:
-- name: context
-  context:
-    cluster: cluster
-    name: user
+func insecureParseClaims(jwt string) (string, bool) {
+	parts := strings.Split(jwt, ".")
+	if len(parts) != 3 {
+		return "", false
+	}
+	rawClaims, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return "", false
+	}
+	out := &bytes.Buffer{}
+	if err := json.Indent(out, rawClaims, "", "\t"); err != nil {
+		return "", false
+	}
+	return out.String(), true
+}
+
+var kubeconfigHTMLTmpl = template.Must(template.New("").Parse(`<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>kubeconfig</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/css/materialize.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/js/materialize.min.js"></script>
+  </head>
+  <body>
+    <nav>
+      <div class="nav-wrapper blue-grey">
+        <ul id="nav-mobile" class="left">
+	      <li><a href="https://github.com/ericchiang/kube-oidc">kube-oidc</a></li>
+          <li><a href="/">back</a></li>
+        </ul>
+      </div>
+    </nav>
+    <div class="container">
+	  <p>Successfully logged in</p>
+	  <div class="divider"></div>
+	  <p>Raw claims:</p>
+	  <pre>
+	    <code>
+{{ .Claims }}
+		</code>
+	  </pre>
+      <div class="row">
+		<a href="/login/dl" class="btn" download="kubeconfig">Download kubeconfig</a>
+	  </div>
+	</div>
+  </body>
+</html>
 `))
