@@ -1,0 +1,30 @@
+# Config format version
+version: "v1"
+
+web:
+    http: "localhost:8080"
+    # Uncomment to use HTTPS
+    # https: "localhost:8443"
+    # httpsCert: "/etc/kube-oidc-login/serving.crt"
+    # httpsKey: "/etc/kube-oidc-login/serving.key"
+
+oidc:
+    issuer: "https://accounts.google.com"
+    # Uncomment for providers running under a custom certificate authority
+    # issuerCA: "/etc/kube-oidc-login/ca.crt"
+
+    clientID: "CLIENT_ID"
+    clientSecretFile: "secrets/client-secret"
+
+    redirectURI: "http://localhost:8080/login/callback"
+
+    # Uncomment to use scopes other than 'openid email profile'
+    # scopes:
+    # - "openid"
+    # - "email"
+    # - "profile"
+    # - "groups"
+
+kubernetes:
+    apiServer: "https://localhost:9443"
+    apiServerCA: "assets/ca.pem"
