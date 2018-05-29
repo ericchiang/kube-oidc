@@ -142,6 +142,7 @@ func serveKubeOIDCProxy(configPath string) error {
 		}
 
 		g.Add(func() error {
+			logger.Printf("serving HTTP at: http://%s", c.httpAddress)
 			return s.ListenAndServe()
 		}, func(err error) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
@@ -171,6 +172,7 @@ func serveKubeOIDCProxy(configPath string) error {
 		}
 
 		g.Add(func() error {
+			logger.Printf("serving HTTPS at: https://%s", c.httpsAddress)
 			return s.ListenAndServeTLS("", "")
 		}, func(err error) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)

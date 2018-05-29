@@ -1,0 +1,24 @@
+# Config format version
+version: "v1"
+
+web:
+    https: "localhost:9443"
+    httpsCert: "assets/server.pem"
+    httpsKey: "assets/server-key.pem"
+
+oidc:
+    issuer: "https://accounts.google.com"
+    # Uncomment for providers running under a custom certificate authority
+    # issuerCA: "/etc/certs/certs.pem"
+
+    usernameClaim: "email"
+    # Uncomment to use a groups claim
+    # groupsClaim: "groups"
+
+    # OAuth2 client ID that JWTs must be issued for
+    allowedClientID: "CLIENT_ID"
+
+kubernetes:
+    # Kubeconfig file that can be used to contact the API server.
+    # If not provided, the in-cluster config will be used.
+    kubeconfig: "secrets/kubeconfig"

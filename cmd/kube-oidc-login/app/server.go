@@ -42,7 +42,8 @@ type server struct {
 	redirectURI *url.URL
 
 	kubernetesEndpoint string
-	kubernetesCA       []byte
+	kubernetesHost     string
+	kubernetesCABase64 string
 
 	logger *log.Logger
 }
@@ -51,6 +52,15 @@ func newServer(c *serverConfig) (*server, error) {
 	redirectURI, err := url.Parse(c.redirectURI)
 	if err != nil {
 		return nil, errors.Wrap(err, "parse redirect URI")
+	}
+
+	kubernetesURL, err := url.Parse(c.kubernetesEndpoint)
+	if err != nil {
+		return nil, errors.Wrap(err, "parse kubernetes endpoint")
+	}
+	kubernetesHost := kubernetesURL.Host
+	if host, _, err := net.SplitHostPort(kubernetesHost); err == nil {
+		kubernetesHost = host
 	}
 
 	client := &http.Client{
@@ -94,7 +104,8 @@ func newServer(c *serverConfig) (*server, error) {
 		},
 		redirectURI:        redirectURI,
 		kubernetesEndpoint: c.kubernetesEndpoint,
-		kubernetesCA:       c.kubernetesCA,
+		kubernetesHost:     kubernetesHost,
+		kubernetesCABase64: base64.StdEncoding.EncodeToString(c.kubernetesCA),
 		logger:             c.logger,
 	}, nil
 }
@@ -194,12 +205,14 @@ func (s *server) handleDownload(w http.ResponseWriter, r *http.Request) {
 
 	out := &bytes.Buffer{}
 	err = kubeconfigTmpl.Execute(out, struct {
+		Cluster string
 		Server  string
 		CAData  string
 		IDToken string
 	}{
+		s.kubernetesHost,
 		s.kubernetesEndpoint,
-		base64.StdEncoding.EncodeToString(s.kubernetesCA),
+		s.kubernetesCABase64,
 		cookie.Value,
 	})
 	if err != nil {
@@ -212,23 +225,23 @@ func (s *server) handleDownload(w http.ResponseWriter, r *http.Request) {
 	w.Write(out.Bytes())
 }
 
-var kubeconfigTmpl = template.Must(template.New("").Parse(`apiVersion: v1
-kind: Config
+var kubeconfigTmpl = template.Must(template.New("").Parse(`apiVersion: "v1"
+kind: "Config"
 clusters:
-- name: cluster
+- name: "{{ .Cluster }}"
   cluster:
-    server: {{ .Server }}{{ if .CAData }}
-    certificate-authority-data: {{ .CAData }}{{ end }}
+    server: "{{ .Server }}"{{ if .CAData }}
+    certificate-authority-data: "{{ .CAData }}"{{ end }}
 users:
-- name: user
+- name: "openid-connect-user"
   user:
-    token: {{ .IDToken }}
+    token: "{{ .IDToken }}"
 contexts:
-- name: context
+- name: "openid-connect"
   context:
-    cluster: cluster
-    name: user
-current-context: context
+    cluster: "{{ .Cluster }}"
+    user: "openid-connect-user"
+current-context: "openid-connect"
 `))
 
 func (s *server) handleCallback(w http.ResponseWriter, r *http.Request) {
@@ -347,8 +360,7 @@ var kubeconfigHTMLTmpl = template.Must(template.New("").Parse(`<!DOCTYPE html>
 	  <p>Raw claims:</p>
 	  <pre>
 	    <code>
-{{ .Claims }}
-		</code>
+{{ .Claims }}</code>
 	  </pre>
       <div class="row">
 		<a href="/login/dl" class="btn" download="kubeconfig">Download kubeconfig</a>
