@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gorilla/websocket"
@@ -20,18 +21,18 @@ type testConfig struct {
 	useTLS bool
 }
 
-func TestWSReverseProxy(t *testing.T) {
-	testWSReverseProxy(t, &testConfig{})
+func TestTCPReverseProxy(t *testing.T) {
+	testTCPReverseProxy(t, &testConfig{})
 }
 
-func TestWSReverseProxyTLSConfig(t *testing.T) {
-	testWSReverseProxy(t, &testConfig{
+func TestTCPReverseProxyTLSConfig(t *testing.T) {
+	testTCPReverseProxy(t, &testConfig{
 		useTLS: true,
 	})
 }
 
-func TestWSReverseProxyHeaders(t *testing.T) {
-	testWSReverseProxy(t, &testConfig{
+func TestTCPReverseProxyHeaders(t *testing.T) {
+	testTCPReverseProxy(t, &testConfig{
 		modifyRequest: func(url string, h http.Header) (string, http.Header) {
 			h.Set("foo", "bar")
 			return url, h
@@ -44,8 +45,8 @@ func TestWSReverseProxyHeaders(t *testing.T) {
 	})
 }
 
-func TestWSReverseProxyURLPath(t *testing.T) {
-	testWSReverseProxy(t, &testConfig{
+func TestTCPReverseProxyURLPath(t *testing.T) {
+	testTCPReverseProxy(t, &testConfig{
 		modifyRequest: func(url string, h http.Header) (string, http.Header) {
 			url += "/foo?hello=world"
 			return url, h
@@ -61,7 +62,7 @@ func TestWSReverseProxyURLPath(t *testing.T) {
 	})
 }
 
-func TestWSReverseProxySubprotocols(t *testing.T) {
+func TestTCPReverseProxySubprotocols(t *testing.T) {
 	const (
 		// NOTE: For some reason "Sec-WebSocket-Protocol" fails here. Unsure which is
 		// the correct value to send.
@@ -81,7 +82,7 @@ func TestWSReverseProxySubprotocols(t *testing.T) {
 		return false
 	}
 
-	testWSReverseProxy(t, &testConfig{
+	testTCPReverseProxy(t, &testConfig{
 		modifyRequest: func(url string, h http.Header) (string, http.Header) {
 			h.Add(subProtocol, bearerAuth)
 			h.Add(subProtocol, binary)
@@ -102,7 +103,7 @@ func TestWSReverseProxySubprotocols(t *testing.T) {
 	})
 }
 
-func testWSReverseProxy(t *testing.T, config *testConfig) {
+func testTCPReverseProxy(t *testing.T, config *testConfig) {
 	newServer := httptest.NewServer
 	if config.useTLS {
 		newServer = func(h http.Handler) *httptest.Server {
@@ -141,9 +142,9 @@ func testWSReverseProxy(t *testing.T, config *testConfig) {
 	}
 
 	backend := newServer(http.HandlerFunc(f))
-	p, err := newWSReverseProxy(&wsProxyConfig{
+	p, err := newTCPReverseProxy(&tcpProxyConfig{
 		TLSConfig: backend.TLS,
-		Backend:   toWSURL(backend.URL),
+		Backend:   backend.URL,
 		Logger:    log.New(ioutil.Discard, "", 0),
 	})
 	if err != nil {
@@ -153,7 +154,7 @@ func testWSReverseProxy(t *testing.T, config *testConfig) {
 	proxy := newServer(p)
 
 	dialer := &websocket.Dialer{TLSClientConfig: proxy.TLS}
-	targetURL := toWSURL(proxy.URL)
+	targetURL := "ws" + strings.TrimPrefix(proxy.URL, "http")
 	h := http.Header{}
 	if config.modifyRequest != nil {
 		targetURL, h = config.modifyRequest(targetURL, h)
@@ -176,29 +177,11 @@ func testWSReverseProxy(t *testing.T, config *testConfig) {
 	}
 }
 
-func TestToWSURL(t *testing.T) {
+func TestIsUpgradeRequest(t *testing.T) {
 	tests := []struct {
-		url  string
-		want string
-	}{
-		{"https://foo.com", "wss://foo.com"},
-		{"http://foo.com", "ws://foo.com"},
-		{"wss://foo.com", "wss://foo.com"},
-	}
-
-	for _, test := range tests {
-		got := toWSURL(test.url)
-		if got != test.want {
-			t.Errorf("toWSURL(%q), wanted=%s, got=%s", test.url, test.want, got)
-		}
-	}
-}
-
-func TestIsWSRequest(t *testing.T) {
-	tests := []struct {
-		name string
-		req  *http.Request
-		isWS bool
+		name      string
+		req       *http.Request
+		isUpgrade bool
 	}{
 		{
 			name: "websocket_request",
@@ -208,17 +191,17 @@ func TestIsWSRequest(t *testing.T) {
 				r.Header.Set("Upgrade", "websocket")
 				return r
 			}(),
-			isWS: true,
+			isUpgrade: true,
 		},
 		{
-			name: "different_proto",
+			name: "spdy",
 			req: func() *http.Request {
 				r := httptest.NewRequest("GET", "https://example.com/", nil)
 				r.Header.Set("Connection", "Upgrade")
-				r.Header.Set("Upgrade", "h2c")
+				r.Header.Set("Upgrade", "spdy")
 				return r
 			}(),
-			isWS: false,
+			isUpgrade: true,
 		},
 		{
 			name: "with_comma",
@@ -228,15 +211,15 @@ func TestIsWSRequest(t *testing.T) {
 				r.Header.Set("Upgrade", "websocket")
 				return r
 			}(),
-			isWS: true,
+			isUpgrade: true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := isWSRequest(test.req)
-			if got != test.isWS {
-				t.Errorf("expected %v got %v", test.isWS, got)
+			got := isUpgradeRequest(test.req)
+			if got != test.isUpgrade {
+				t.Errorf("expected %v got %v", test.isUpgrade, got)
 			}
 		})
 	}
