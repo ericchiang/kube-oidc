@@ -42,7 +42,7 @@ Many providers have support for OpenID Connect, including:
 * [Salesforce][salesforce-oidc]
 * [Dex][dex]
 
-Kubernetes can validated [ID Tokens][kubernetes-oidc], but leaves login flows and other conviences as exercises to the user. This repo is intended to hold tools that fill in gaps and improve the experience of setting up SSO for Kubernetes clusters.
+Kubernetes can validate [ID Tokens][kubernetes-oidc], but leaves login flows and other conviences as exercises to the user. This repo is intended to hold tools that fill in gaps and improve the experience of setting up SSO for Kubernetes clusters.
 
 [azure-oidc]: https://msdn.microsoft.com/en-us/library/azure/dn645541.aspx
 [dex]: https://github.com/coreos/dex
@@ -50,21 +50,21 @@ Kubernetes can validated [ID Tokens][kubernetes-oidc], but leaves login flows an
 [kubernetes-oidc]: https://kubernetes.io/docs/reference/access-authn-authz/authentication/#openid-connect-tokens
 [oidc-docs]: http://openid.net/connect/
 [okta-oidc]: https://developer.okta.com/docs/api/resources/oidc
-[salesforce]: https://developer.salesforce.com/page/Inside_OpenID_Connect_on_Force.com
+[salesforce-oidc]: https://developer.salesforce.com/page/Inside_OpenID_Connect_on_Force.com
 
 ## kube-oidc-login
 
-`kube-oidc-login` is an OAuth2 client for generating user kubeconfig files. Its logs in the user through an OpenID conenct provider, then templates the returned ID Token into the kubeconfig:
+`kube-oidc-login` is an OAuth2 client for generating user kubeconfig files. It logs in the user through an OpenID connect provider, then templates the returned ID Token into the kubeconfig:
 
 ![](docs/imgs/kube-oidc-login.png)
 
 ## kube-oidc-proxy
 
-`kube-oidc-proxy` is an authenticating proxy for the Kubernetes API server. It authenticates OpenID Connect ID Tokens then [impersonates the authenticaed user][impersionation] to the API server.
+`kube-oidc-proxy` is an authenticating proxy for the Kubernetes API server. It authenticates OpenID Connect ID Tokens then [impersonates the authenticated user][impersonation] to the API server.
 
-Unlike other OpenID Connect solutions, `kube-oidc-prox` doesn't require reconfiguration of the API server and works with any Kubernetes cluster out of the box.
+Unlike other OpenID Connect solutions, `kube-oidc-proxy` doesn't require reconfiguration of the API server and works with any Kubernetes cluster out of the box.
 
-[impersionation]: https://kubernetes.io/docs/reference/access-authn-authz/authentication/#user-impersonation
+[impersonation]: https://kubernetes.io/docs/reference/access-authn-authz/authentication/#user-impersonation
 
 ## Getting started
 
