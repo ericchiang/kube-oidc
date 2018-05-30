@@ -184,6 +184,58 @@ users:
     client-key: {{ .Testdata }}/client-key.pem
 `,
 		},
+		{
+			name: "AuthProvider",
+			data: `
+apiVersion: v1
+kind: Config
+clusters:
+- name: dev
+  cluster:
+    certificate-authority: {{ .Testdata }}/ca.pem
+    server: {{ .Endpoint }}
+users:
+- name: developer
+  user:
+    auth-provider:
+      name: oidc
+      config:
+        client-id: foo
+        client-secret: bar
+contexts:
+- name: dev
+  context:
+    user: developer
+    cluster: dev
+current-context: dev
+`,
+			wantParseErr: true,
+		},
+		{
+			name: "ExecPlugin",
+			data: `
+apiVersion: v1
+kind: Config
+clusters:
+- name: dev
+  cluster:
+    certificate-authority: {{ .Testdata }}/ca.pem
+    server: {{ .Endpoint }}
+users:
+- name: developer
+  user:
+    exec:
+      command: "example-client-go-exec-plugin"
+      apiVersion: "client.authentication.k8s.io/v1alpha1"
+contexts:
+- name: dev
+  context:
+    user: developer
+    cluster: dev
+current-context: dev
+`,
+			wantParseErr: true,
+		},
 	}
 
 	caData, err := ioutil.ReadFile("testdata/ca.pem")

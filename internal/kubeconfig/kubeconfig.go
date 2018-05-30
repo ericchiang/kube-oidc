@@ -75,6 +75,12 @@ func (c *credentials) set(r *http.Request) {
 }
 
 func load(u *user, c *cluster) (*Config, error) {
+	if u.Exec != nil {
+		return nil, errors.New("exec plugins are unsupported by this client, consider using a service account token instead")
+	}
+	if u.AuthProvider != nil {
+		return nil, errors.New("auth provider plugins are unsupported by this client, consider using a service account token instead")
+	}
 	// Quick checks first
 	if c.Server == "" {
 		return nil, errors.New("cluster has no server address")
@@ -191,6 +197,10 @@ type user struct {
 	Password       string `json:"password"`
 	Token          string `json:"token"`
 	TokenFile      string `json:"tokenFile"`
+	// The following fields are used to detect the presence of auth provider
+	// and exec plugins, both of which are unsupported.
+	AuthProvider *struct{} `json:"auth-provider"`
+	Exec         *struct{} `json:"exec"`
 }
 
 type cluster struct {
