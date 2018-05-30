@@ -55,19 +55,19 @@ func New(c *Config) (http.Handler, error) {
 	}
 	httpProxy.ErrorLog = c.Logger
 
-	wsProxy, err := newWSReverseProxy(&wsProxyConfig{
-		Backend:   toWSURL(c.Backend),
+	tcpProxy, err := newTCPReverseProxy(&tcpProxyConfig{
+		Backend:   c.Backend,
 		TLSConfig: c.BackendTLSConfig,
 		Logger:    c.Logger,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "initializing websocket support")
+		return nil, errors.Wrap(err, "initializing upgrade support")
 	}
 
 	return &proxy{
 		authenticator: c.Authenticator,
 		backendAuth:   c.BackendAuth,
-		wsProxy:       wsProxy,
+		tcpProxy:      tcpProxy,
 		httpProxy:     httpProxy,
 		logger:        c.Logger,
 	}, nil
@@ -79,7 +79,7 @@ type proxy struct {
 	backendAuth func(r *http.Request)
 
 	httpProxy *httputil.ReverseProxy
-	wsProxy   *wsReverseProxy
+	tcpProxy  *tcpReverseProxy
 
 	logger *log.Logger
 }
@@ -129,8 +129,8 @@ func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	p.backendAuth(r)
 
-	if isWSRequest(r) {
-		p.wsProxy.ServeHTTP(w, r)
+	if isUpgradeRequest(r) {
+		p.tcpProxy.ServeHTTP(w, r)
 		return
 	}
 	p.httpProxy.ServeHTTP(w, r)
